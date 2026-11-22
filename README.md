@@ -6,7 +6,7 @@ This README summarizes the initial scope and explains how to run the available s
 
 ## Current status
 
-The M0 scaffold includes configuration validation with Zod, a minimal HTTP server, timeouts and shutdown handling for `SIGTERM`/`SIGINT`, unit and API tests, Docker Compose, and a CI pipeline.
+The initial scaffold includes configuration validation with Zod, a minimal HTTP server, timeouts and shutdown handling for `SIGTERM`/`SIGINT`, unit and API tests, Docker Compose, and a CI pipeline.
 
 The only available endpoint is `GET /health`, which returns HTTP `200` with `{"status":"ok"}`. Other requests receive HTTP `404` in Problem Details format.
 
@@ -68,11 +68,31 @@ Dependencies are composed explicitly in `src/bootstrap.ts` through constructor i
 
 Most of these layers still await implementation. Empty scaffold directories, including `prisma/`, may be absent from a fresh Git checkout.
 
+### Repository layout
+
+| Path | Responsibility |
+|---|---|
+| `src/server.ts` | HTTP startup and graceful shutdown |
+| `src/bootstrap.ts` | Environment validation and dependency composition |
+| `src/Kernel/HttpServer.ts` | Current health endpoint and fallback responses |
+| `tests/Unit/` | Configuration tests |
+| `tests/Api/` | HTTP tests against an ephemeral local server |
+| `docker/postgres/init/` | Test database initialization |
+| `.github/` | CI workflow and pull request template |
+| `dist/`, `coverage/`, `node_modules/` | Generated output and dependencies, excluded from Git |
+
 ## Local setup with Docker
 
-Docker with Docker Compose v2 support and GNU Make are required. Run commands from the project root. Node.js on the host is optional when working in containers.
+Docker with Docker Compose v2 support, GNU Make, Git, and curl are required. Start the Docker daemon before running the setup. Node.js on the host is optional when working in containers.
 
-To customize ports, copy `.env.example` to `.env` before starting. The `.env` file is optional and must not be committed.
+Clone the repository and enter its root directory:
+
+```sh
+git clone https://github.com/gigapin/quadrevo.git
+cd quadrevo
+```
+
+For a first checkout, run the following commands. Copy `.env.example` only if `.env` does not already exist; adjust conflicting ports before starting services. The `.env` file is optional and must not be committed.
 
 ```sh
 cp .env.example .env
@@ -92,6 +112,8 @@ The expected health check response is:
 {"status":"ok"}
 ```
 
+`make up` starts services in the background. Check readiness with `docker compose ps`; retry the health check after the application starts. Use `make logs` to inspect startup errors. A successful `make check` confirms that type checks, lint, architectural boundaries, and the current test suite pass.
+
 | Service | Default host access |
 |---|---|
 | API | `http://127.0.0.1:3000` |
@@ -107,6 +129,14 @@ PostgreSQL uses the local credentials `quadrevo` / `quadrevo`. The development d
 Renaming the Compose project creates a separate namespace for containers, networks, and volumes. Existing volumes from the previous project remain untouched and are not automatically migrated. The new database names and user apply when initializing a fresh PostgreSQL volume; changing environment variables does not rename databases or roles in an existing volume.
 
 Inside containers, connections use the service names `postgres` and `mailpit`. Docker Compose already sets `DATABASE_URL`, `DATABASE_URL_TEST`, `SMTP_HOST`, and `SMTP_PORT`.
+
+### Troubleshooting
+
+- **Docker connection errors:** start Docker and verify that `docker compose version` works.
+- **Port already allocated:** change the corresponding host port in `.env`, then run `make up` again.
+- **Missing `tsx` or test tools:** run `make npm c="ci"` to populate the dependency volume. Run it again after dependency or lockfile changes.
+- **Database missing after configuration changes:** initialization scripts run only for a fresh volume. Inspect with `make psql` or `make psql-test`; preserve existing data before considering a reset.
+- **Stopping development:** use `make down` to preserve data. `make reset` deletes both database and dependency volumes; after an intentional reset, repeat dependency installation and startup.
 
 ## Development commands
 
@@ -135,7 +165,7 @@ The current suite covers configuration and HTTP behavior for `/health` and unkno
 
 The planned strategy adds tests against real PostgreSQL for transactions, migrations, locks, and constraints; API tests for permissions, tenant isolation, and idempotency; concurrency tests for numbering and payments; and contract tests for SDI and preservation. The coverage target is at least 85% for `Domain/` and `Application/` once implemented.
 
-The roadmap progresses from M0 (foundations) through M1 (HTTP), M2 (persistence), M3 (identity and tenants), M4 (contacts), M5 (accounting), M6 (invoicing), M7 (payments), M8 (background processing), M9 (SDI and preservation), M10 (recurring invoices and reports), and M11 (security and audit). Release preparation, M12, will be analyzed separately.
+Development proceeds from HTTP and persistence to identity and tenant isolation, contacts, accounting, invoicing, payments, background processing, SDI and preservation, recurring invoices and reports, and security and audit. Release preparation will be planned separately.
 
 The workflow uses one branch and pull request per functional goal, Conventional Commits, CI checks, and squash merges. New dependencies must be agreed upon before introduction. All repository content, code comments, commit messages, and pull request text must be written in English.
 
@@ -157,3 +187,19 @@ Repository administrators can inspect these settings under **Settings → Branch
 ## Project specifications
 
 Detailed planning documents are maintained locally under `docs/`, which is currently excluded from version control. They are not included in a GitHub checkout. The Node.js/TypeScript specification is the reference for this implementation; the original PHP proposal is retained locally as historical context.
+
+### Architecture decisions
+
+The initial decisions are summarized here so that a fresh checkout remains self-contained:
+
+- **Express, Prisma, and PostgreSQL:** use established HTTP and persistence tools while retaining business invariants and transaction boundaries in application code and the database. Keep framework and ORM types outside Domain and Application. Express and Prisma integration is planned; PostgreSQL is already configured.
+- **Node.js 26 and TypeScript 6:** keep the runtime aligned across `.nvmrc`, package engines, Docker, and CI. Use strict TypeScript with ESM/NodeNext and the committed lockfile. Defer a compiler major upgrade until the lint toolchain supports the selected release and repository checks pass together.
+- **One branch and PR per functional goal:** use descriptive English names, Conventional Commits with optional functional scopes, required CI checks, and squash merge. Only the owner creates commits and pushes; internal planning identifiers stay out of branch names and code comments.
+
+Full Architecture Decision Records (ADRs) are maintained locally with **Context**, **Decision**, and **Consequences** sections:
+
+- `docs/adr/0001-express-prisma-postgresql.md`
+- `docs/adr/0002-node-26-typescript-6.md`
+- `docs/adr/0003-branch-per-task-workflow.md`
+
+These paths describe local records, not files available through GitHub. See [Repository Guidelines](AGENTS.md) for contributor rules and the [pull request template](.github/pull_request_template.md) for review requirements.
