@@ -1,0 +1,60 @@
+name: ledgerly-ts
+
+services:
+  app:
+    build:
+      context: .
+      target: dev
+    # Run tsx directly (without npm) so SIGTERM reaches the process for a clean shutdown.
+    # Inspector listens on 0.0.0.0 inside the container; its port is published only on host address 127.0.0.1.
+    command: ["node_modules/.bin/tsx", "watch", "--inspect=0.0.0.0:9229", "src/server.ts"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://ledgerly:ledgerly@postgres:5432/ledgerly?schema=public
+      DATABASE_URL_TEST: postgresql://ledgerly:ledgerly@postgres:5432/ledgerly_test?schema=public
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+      - "127.0.0.1:${DEBUG_PORT:-9229}:9229"
+    volumes:
+      - .:/app
+      # Keep node_modules in the container: Linux native binaries are separate from macOS binaries.
+      - node_modules:/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  postgres:
+    image: postgres:18.7-trixie
+    environment:
+      POSTGRES_USER: ledgerly
+      POSTGRES_PASSWORD: ledgerly
+      POSTGRES_DB: ledgerly
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Starting with PostgreSQL 18, the official image uses /var/lib/postgresql as the mount point.
+      - pgdata:/var/lib/postgresql
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ledgerly -d ledgerly"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:v1.34.0
+    ports:
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
+
+volumes:
+  pgdata:
+  node_modules:

@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Same version as in compose.yaml; used by integration tests starting in M2.
+    services:
+      postgres:
+        image: postgres:18.7-trixie
+        env:
+          POSTGRES_USER: ledgerly
+          POSTGRES_PASSWORD: ledgerly
+          POSTGRES_DB: ledgerly_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ledgerly -d ledgerly_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL_TEST: postgresql://ledgerly:ledgerly@localhost:5432/ledgerly_test?schema=public
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      # Starting in M2: npx prisma validate && npx prisma generate
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run depcruise
+      - run: npm run test:coverage
+      - run: npm run build
+      # Policy: block the pipeline on high/critical vulnerabilities; assess the others during reviews.
+      - run: npm audit --audit-level=high
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build production image
+        run: docker build --target prod -t ledgerly:ci .
