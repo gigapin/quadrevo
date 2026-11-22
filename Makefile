@@ -44,13 +44,13 @@ check: ## typecheck + lint + dependency boundaries + tests with coverage (same a
 	$(RUN) npm run check
 
 psql: ## psql console for the development database
-	$(COMPOSE) exec postgres psql -U ledgerly -d ledgerly
+	$(COMPOSE) exec postgres psql -U quadrevo -d quadrevo
 
 psql-test: ## psql console for the test database
-	$(COMPOSE) exec postgres psql -U ledgerly -d ledgerly_test
+	$(COMPOSE) exec postgres psql -U quadrevo -d quadrevo_test
 
 reset: ## Stop everything and delete volumes (databases and node_modules)
 	$(COMPOSE) down -v
 
 prod-image: ## Build the production image
-	docker build --target prod -t ledgerly:local .
+	docker build --target prod -t quadrevo:local .

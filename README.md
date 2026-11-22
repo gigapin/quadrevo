@@ -12,7 +12,7 @@ The only available endpoint is `GET /health`, which returns HTTP `200` with `{"s
 
 Express, Prisma, authentication, application persistence, and business features are planned for later milestones. PostgreSQL and Mailpit are already configured for local development; the HTTP scaffold does not use them yet.
 
-The product name is **Quadrevo**. Some scaffold identifiers still use `ledgerly`: the npm package name, Compose project, databases, PostgreSQL user, and local image tag.
+The npm package, PostgreSQL user, and development database are named `quadrevo`; the test database is `quadrevo_test`. Docker Compose uses the project name `quadrevo-ts`, and local images use the `quadrevo` tag prefix.
 
 ## Initial functional scope
 
@@ -102,7 +102,9 @@ The expected health check response is:
 
 Published ports can be configured through `APP_PORT`, `DEBUG_PORT`, `POSTGRES_PORT`, `MAILPIT_UI_PORT`, and `MAILPIT_SMTP_PORT` in `.env`. If `APP_PORT` changes, update the health check URL accordingly.
 
-PostgreSQL uses the local credentials `ledgerly` / `ledgerly`. The development database is `ledgerly`; the initialization script creates `ledgerly_test` for future tests against a real database. This script runs only when the `pgdata` volume is first initialized.
+PostgreSQL uses the local credentials `quadrevo` / `quadrevo`. The development database is `quadrevo`; the initialization script creates `quadrevo_test` for future tests against a real database. This script runs only when the `pgdata` volume is first initialized.
+
+Renaming the Compose project creates a separate namespace for containers, networks, and volumes. Existing volumes from the previous project remain untouched and are not automatically migrated. The new database names and user apply when initializing a fresh PostgreSQL volume; changing environment variables does not rename databases or roles in an existing volume.
 
 Inside containers, connections use the service names `postgres` and `mailpit`. Docker Compose already sets `DATABASE_URL`, `DATABASE_URL_TEST`, `SMTP_HOST`, and `SMTP_PORT`.
 
@@ -119,7 +121,7 @@ Inside containers, connections use the service names `postgres` and `mailpit`. D
 | `make check` | Run type checks, lint, dependency boundary checks, and tests with coverage |
 | `make psql` / `make psql-test` | Open the development or test database console |
 | `make npm c="run build"` | Compile TypeScript into `dist/` |
-| `make prod-image` | Build the production image as `ledgerly:local` |
+| `make prod-image` | Build the production image as `quadrevo:local` |
 | `make down` | Stop services while preserving volumes |
 | `make reset` | Stop services and delete volumes, including databases and dependencies |
 
@@ -135,7 +137,22 @@ The planned strategy adds tests against real PostgreSQL for transactions, migrat
 
 The roadmap progresses from M0 (foundations) through M1 (HTTP), M2 (persistence), M3 (identity and tenants), M4 (contacts), M5 (accounting), M6 (invoicing), M7 (payments), M8 (background processing), M9 (SDI and preservation), M10 (recurring invoices and reports), and M11 (security and audit). Release preparation, M12, will be analyzed separately.
 
-The planned workflow uses one branch and pull request per task, Conventional Commits, CI checks, and squash merges. GitHub branch protection is an initial task still to be completed. New dependencies must be agreed upon before introduction. All repository content, code comments, commit messages, and pull request text must be written in English.
+The workflow uses one branch and pull request per functional goal, Conventional Commits, CI checks, and squash merges. New dependencies must be agreed upon before introduction. All repository content, code comments, commit messages, and pull request text must be written in English.
+
+## Pull requests and branch protection
+
+Use descriptive branch names such as `chore/github-workflow` and commit messages such as `chore(ci): configure pull request checks`. Keep branch names and code comments independent of internal planning identifiers. Only the repository owner creates commits and pushes changes.
+
+Pull requests targeting `main` use the [PR template](.github/pull_request_template.md). Describe the functional goal, changes, and validation results, then complete the definition-of-done checklist. Run `make check` before submitting changes.
+
+The repository requires the following GitHub settings:
+
+- `main` requires a pull request, including for administrators; direct pushes, force pushes, and branch deletion are prohibited.
+- The GitHub Actions checks `check` and `docker` must pass. Branches must be up to date with `main` before merging.
+- No minimum approval count is configured, allowing the owner to work alone; pull requests and required checks remain mandatory.
+- Squash merge is the only enabled merge method. GitHub automatically deletes merged head branches.
+
+Repository administrators can inspect these settings under **Settings → Branches → main** and **Settings → General → Pull Requests**. After pushing a feature branch, verify that its PR lists both checks as required and enables merging only after they pass.
 
 ## Project specifications
 

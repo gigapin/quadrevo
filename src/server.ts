@@ -2,7 +2,7 @@ import type { AddressInfo } from 'node:net';
 import { loadConfig } from './bootstrap.js';
 import { createHttpServer } from './Kernel/HttpServer.js';
 
-// Log to stdout/stderr until Pino is introduced in M1.
+// Log to stdout/stderr until structured logging is introduced.
 /* eslint-disable no-console */
 
 const config = loadConfig(process.env);
@@ -10,7 +10,7 @@ const server = createHttpServer();
 
 server.listen(config.http.port, config.http.host, () => {
   const { address, port } = server.address() as AddressInfo;
-  console.log(`ledgerly listening on http://${address}:${String(port)} (${config.env})`);
+  console.log(`quadrevo listening on http://${address}:${String(port)} (${config.env})`);
 });
 
 let shuttingDown = false;

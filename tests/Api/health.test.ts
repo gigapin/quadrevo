@@ -3,7 +3,7 @@ import type { Server } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createHttpServer } from '../../src/Kernel/HttpServer.js';
 
-// Pattern from §8: real server on an ephemeral port + fetch.
+// Exercise a real server on an ephemeral port using fetch.
 let server: Server;
 let baseUrl: string;
 

@@ -42,7 +42,7 @@ COPY package.json package-lock.json .npmrc ./
 RUN --mount=type=cache,target=/root/.npm npm ci
 
 # ---------------------------------------------------------------------------
-# build: TypeScript compilation (also `prisma generate` starting in M2)
+# build: TypeScript compilation; add `prisma generate` when Prisma is integrated
 # ---------------------------------------------------------------------------
 FROM deps AS build
 COPY . .

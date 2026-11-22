@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 /**
  * Composition root: validated configuration.
- * The logger, Prisma client, repositories, and handlers will be wired here in M1/M2.
+ * Wire the logger, Prisma client, repositories, and handlers here as they are introduced.
  */
 
 const ConfigSchema = z.object({

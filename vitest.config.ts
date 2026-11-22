@@ -9,7 +9,7 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**/*.ts'],
       reporter: ['text', 'html', 'lcov'],
-      // Target from §8: ≥ 85% for Domain/ and Application/; elsewhere, as much as needed.
+      // Coverage target: ≥ 85% for Domain/ and Application/; elsewhere, as much as needed.
       thresholds: {
         'src/Domain/**': { lines: 85, functions: 85, branches: 85, statements: 85 },
         'src/Application/**': { lines: 85, functions: 85, branches: 85, statements: 85 },

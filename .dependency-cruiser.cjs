@@ -1,5 +1,5 @@
 /**
- * Dependency rules (§3 of the project document).
+ * Architectural dependency rules.
  * Domain does not import anything from Application, Infrastructure, Interface, or Kernel.
  * Application depends only on the domain and its own ports.
  * @type {import('dependency-cruiser').IConfiguration}

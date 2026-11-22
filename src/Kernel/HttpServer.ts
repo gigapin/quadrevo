@@ -1,8 +1,8 @@
 import { createServer, type Server } from 'node:http';
 
 /**
- * Minimal HTTP server for M0 (health check only).
- * In M1, this will be replaced by ExpressApp + Routes with Problem Details.
+ * Minimal HTTP server providing a health check.
+ * Planned replacement: ExpressApp + Routes with Problem Details.
  */
 export function createHttpServer(): Server {
   const server = createServer((req, res) => {
@@ -15,7 +15,7 @@ export function createHttpServer(): Server {
     res.end(JSON.stringify({ type: 'about:blank', title: 'Not Found', status: 404 }));
   });
 
-  // Explicit timeouts (§3, Event loop).
+  // Explicit HTTP timeouts.
   server.requestTimeout = 30_000;
   server.headersTimeout = 10_000;
   server.keepAliveTimeout = 5_000;

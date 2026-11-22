@@ -17,23 +17,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    # Same version as in compose.yaml; used by integration tests starting in M2.
+    # Same version as in compose.yaml; reserved for database integration tests.
     services:
       postgres:
         image: postgres:18.7-trixie
         env:
-          POSTGRES_USER: ledgerly
-          POSTGRES_PASSWORD: ledgerly
-          POSTGRES_DB: ledgerly_test
+          POSTGRES_USER: quadrevo
+          POSTGRES_PASSWORD: quadrevo
+          POSTGRES_DB: quadrevo_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U ledgerly -d ledgerly_test"
+          --health-cmd "pg_isready -U quadrevo -d quadrevo_test"
           --health-interval 5s --health-timeout 3s --health-retries 10
 
     env:
       NODE_ENV: test
-      DATABASE_URL_TEST: postgresql://ledgerly:ledgerly@localhost:5432/ledgerly_test?schema=public
+      DATABASE_URL_TEST: postgresql://quadrevo:quadrevo@localhost:5432/quadrevo_test?schema=public
 
     steps:
       - uses: actions/checkout@v7
@@ -44,7 +44,7 @@ jobs:
           cache: npm
 
       - run: npm ci
-      # Starting in M2: npx prisma validate && npx prisma generate
+      # Once Prisma is integrated: npx prisma validate && npx prisma generate
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run depcruise
@@ -59,4 +59,4 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Build production image
-        run: docker build --target prod -t ledgerly:ci .
+        run: docker build --target prod -t quadrevo:ci .
