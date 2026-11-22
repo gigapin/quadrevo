@@ -26,7 +26,7 @@ export class InvalidConfigError extends Error {
 export function loadConfig(env: unknown): AppConfig {
   const parsed = ConfigSchema.safeParse(env);
   if (!parsed.success) {
-    throw new InvalidConfigError(`Configurazione non valida:\n${z.prettifyError(parsed.error)}`);
+    throw new InvalidConfigError(`Invalid configuration:\n${z.prettifyError(parsed.error)}`);
   }
   const c = parsed.data;
   return Object.freeze({

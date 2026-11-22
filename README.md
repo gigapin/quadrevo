@@ -1,78 +1,78 @@
 # Quadrevo
 
-Backend multi-tenant per la fatturazione elettronica italiana e la contabilità in partita doppia, esposto tramite API REST. Il progetto punta a un servizio destinato alla produzione, con particolare attenzione a integrità dei dati, isolamento delle organizzazioni e tracciabilità delle operazioni.
+A multi-tenant backend for Italian electronic invoicing and double-entry accounting, exposed through a REST API. The project aims to deliver a production service with a focus on data integrity, organization isolation, and traceable operations.
 
-Le specifiche di riferimento sono raccolte nel [documento di progetto Node.js/TypeScript](docs/02-Progetto-A-Quadrevo-Nodejs-TypeScript.md). Questo README riassume il perimetro iniziale e descrive come avviare lo scaffold disponibile.
+This README summarizes the initial scope and explains how to run the available scaffold.
 
-## Stato attuale
+## Current status
 
-È presente lo scaffold M0: configurazione validata con Zod, server HTTP minimale, timeout e shutdown su `SIGTERM`/`SIGINT`, test unitari e API, Docker Compose e pipeline CI.
+The M0 scaffold includes configuration validation with Zod, a minimal HTTP server, timeouts and shutdown handling for `SIGTERM`/`SIGINT`, unit and API tests, Docker Compose, and a CI pipeline.
 
-L'unico endpoint disponibile è `GET /health`, che restituisce HTTP `200` con `{"status":"ok"}`. Le altre richieste ricevono HTTP `404` in formato Problem Details.
+The only available endpoint is `GET /health`, which returns HTTP `200` with `{"status":"ok"}`. Other requests receive HTTP `404` in Problem Details format.
 
-Express, Prisma, autenticazione, persistenza applicativa e funzionalità di business sono previsti nelle milestone successive. PostgreSQL e Mailpit sono già configurati nell'ambiente locale; lo scaffold HTTP non li utilizza ancora.
+Express, Prisma, authentication, application persistence, and business features are planned for later milestones. PostgreSQL and Mailpit are already configured for local development; the HTTP scaffold does not use them yet.
 
-Il nome del prodotto è **Quadrevo**. Alcuni identificativi dello scaffold usano ancora `ledgerly`: nome del package npm, progetto Compose, database, utente PostgreSQL e tag dell'immagine locale.
+The product name is **Quadrevo**. Some scaffold identifiers still use `ledgerly`: the npm package name, Compose project, databases, PostgreSQL user, and local image tag.
 
-## Specifiche funzionali iniziali
+## Initial functional scope
 
-Ogni organizzazione costituisce un tenant e gestisce i propri dati:
+Each organization is a tenant and manages its own data:
 
-| Area | Funzionalità previste |
+| Area | Planned features |
 |---|---|
-| Identità e accessi | Registrazione, sessioni, refresh token ruotati, ruoli, autorizzazioni e API token con scope |
-| Anagrafiche | Clienti e fornitori, dati fiscali italiani, indirizzi e termini di pagamento |
-| Contabilità | Piano dei conti, scritture in partita doppia, storni, estratto conto e bilancio di verifica |
-| Fatturazione | Bozze, calcolo IVA e totali, numerazione progressiva, finalizzazione, revisioni e note di credito |
-| Incassi | Registrazione, allocazioni parziali su più fatture, anticipi cliente e scadenzario |
-| Elaborazioni asincrone | Outbox transazionale, coda PostgreSQL, worker, retry e deduplicazione |
-| Documenti e integrazioni | PDF, XML FatturaPA, validazione XSD, provider SDI, conservazione, email e webhook firmati |
-| Ricorrenze e report | Generazione periodica delle fatture, report IVA a debito e fatturato, esportazione CSV |
-| Audit | Registro append-only e catena di hash per rilevare manomissioni |
+| Identity and access | Registration, sessions, rotated refresh tokens, roles, permissions, and scoped API tokens |
+| Contacts | Customers and suppliers, Italian tax details, addresses, and payment terms |
+| Accounting | Chart of accounts, double-entry postings, reversals, account statements, and trial balance |
+| Invoicing | Drafts, VAT and total calculations, sequential numbering, finalization, revisions, and credit notes |
+| Payments | Recording receipts, partial allocations across invoices, customer advances, and aging reports |
+| Background processing | Transactional outbox, PostgreSQL job queue, workers, retries, and deduplication |
+| Documents and integrations | PDF, FatturaPA XML, XSD validation, SDI provider, statutory document preservation, email, and signed webhooks |
+| Recurring invoices and reports | Scheduled invoice generation, output VAT and revenue reports, and CSV exports |
+| Audit | Append-only records and a hash chain to detect tampering |
 
-Il primo rilascio previsto copre il **ciclo attivo B2B/B2C italiano**, incluse fatture e note di credito, invio tramite provider, ricezione degli esiti SDI e conservazione a norma. Il provider deve ancora essere selezionato e sarà isolato tramite porte applicative dedicate.
+The planned first release covers **outgoing Italian B2B/B2C invoices and credit notes**, including submission through a provider, receipt of SDI outcomes, and statutory document preservation. The provider has yet to be selected and will be isolated behind dedicated application ports.
 
-Ciclo passivo, Pubblica Amministrazione, estero, autofatture, regimi fiscali particolari, multi-valuta e interfaccia web richiedono un perimetro successivo dedicato. Volumi, hosting, obiettivi di disponibilità e procedure operative devono essere definiti prima del rilascio.
+Incoming supplier invoices, public administration invoicing, cross-border transactions, self-invoicing, special tax regimes, multiple currencies, and a web interface require a separate future scope. Workload estimates, hosting, availability targets, and operating procedures must be defined before release.
 
-## Requisiti di integrità
+## Integrity requirements
 
-1. **Bilanciamento contabile:** ogni scrittura deve avere totale dare uguale al totale avere, con verifica applicativa e vincolo o trigger nel database. I saldi derivano dalle righe contabili.
-2. **Revisioni immutabili:** i dati fiscali finalizzati e gli XML associati non vengono sovrascritti. Gli scarti consentono revisioni correttive tracciate; le fatture fiscalmente emesse si correggono tramite nota di credito.
-3. **Numerazione atomica:** il numero viene assegnato alla prima finalizzazione, con lock nella transazione. Retry e revisioni non consumano nuovi numeri; i documenti numerati non vengono cancellati.
-4. **Idempotenza:** i `POST` di business richiedono `Idempotency-Key`; stessa chiave e stesso payload restituiscono la risposta salvata senza duplicare gli effetti. L'autenticazione segue regole dedicate.
-5. **Isolamento tenant:** accessi e relazioni sono vincolati a `organization_id`, con enforcement centralizzato e test di accesso tra organizzazioni.
-6. **Auditabilità:** gli eventi sono registrati in un log append-only con catena di hash.
+1. **Balanced entries:** total debits must equal total credits for every journal entry, enforced by application checks and a database constraint or trigger. Account balances are derived from journal lines.
+2. **Immutable revisions:** finalized tax data and associated XML files must not be overwritten. Rejected invoices allow traceable corrective revisions; invoices confirmed as issued are corrected through credit notes.
+3. **Atomic numbering:** a number is assigned at first finalization using a lock within the transaction. Retries and revisions do not consume new numbers; numbered documents are never deleted.
+4. **Idempotency:** business `POST` requests require an `Idempotency-Key`; the same key and payload return the saved response without duplicating effects. Authentication follows dedicated rules.
+5. **Tenant isolation:** access and relationships are scoped to `organization_id`, with centralized enforcement and tests for access across organizations.
+6. **Auditability:** events are recorded in an append-only log with a hash chain.
 
-Presa in carico del provider, esito SDI, incasso e conservazione mantengono stati separati. Un timeout richiede riconciliazione dello stato remoto prima di procedere con eventuali nuovi invii.
+Provider acceptance, SDI outcomes, payment, and preservation have separate states. A timeout requires reconciliation with the remote state before any further submission is attempted.
 
-## Stack e architettura
+## Stack and architecture
 
-| Area | Base presente | Evoluzione prevista |
+| Area | Current foundation | Planned evolution |
 |---|---|---|
-| Runtime | Node.js `26.13.1`, TypeScript `6.0.3`, ESM e modalità strict | Versioni allineate tra `.nvmrc`, package, Docker e CI |
-| HTTP | Server nativo `node:http` | Express, middleware, Problem Details e OpenAPI |
-| Validazione e log | Zod, log su stdout/stderr | Pino e request-id |
-| Persistenza | PostgreSQL `18.7` in Docker | Prisma ORM 7, adapter PostgreSQL e migrazioni revisionate |
-| Importi | Da implementare | `bigint` per centesimi finali, `decimal.js` per calcoli intermedi |
-| Qualità | Vitest, ESLint, TypeScript e dependency-cruiser | Test di integrazione, concorrenza e proprietà |
-| Servizi locali | Docker Compose e Mailpit | Worker e adapter per le integrazioni |
+| Runtime | Node.js `26.13.1`, TypeScript `6.0.3`, ESM, and strict mode | Versions kept aligned across `.nvmrc`, package metadata, Docker, and CI |
+| HTTP | Native `node:http` server | Express, middleware, Problem Details, and OpenAPI |
+| Validation and logging | Zod and stdout/stderr logging | Pino and request IDs |
+| Persistence | PostgreSQL `18.7` in Docker | Prisma ORM 7, PostgreSQL adapter, and reviewed migrations |
+| Monetary values | Pending implementation | `bigint` for final amounts in cents, `decimal.js` for intermediate calculations |
+| Quality | Vitest, ESLint, TypeScript, and dependency-cruiser | Integration, concurrency, and property-based tests |
+| Local services | Docker Compose and Mailpit | Workers and integration adapters |
 
-La composizione delle dipendenze avviene esplicitamente in `src/bootstrap.ts`, tramite constructor injection e factory tipizzate. I confini sono verificati con dependency-cruiser:
+Dependencies are composed explicitly in `src/bootstrap.ts` through constructor injection and typed factories. Boundaries are checked with dependency-cruiser:
 
-- `Domain` contiene entità e invarianti, senza dipendenze dagli altri strati applicativi, da Express o da Prisma.
-- `Application` contiene casi d'uso e porte; dipende dal dominio e dalle proprie astrazioni.
-- `Infrastructure` implementa persistenza e integrazioni esterne.
-- `Interface` espone controller HTTP e comandi console.
-- `Kernel` gestisce l'infrastruttura HTTP e i middleware.
-- `Support` raccoglie utilità condivise indipendenti dagli strati applicativi.
+- `Domain` contains entities and invariants, independent of other application layers, Express, and Prisma.
+- `Application` contains use cases and ports; it depends on the domain and its own abstractions.
+- `Infrastructure` implements persistence and external integrations.
+- `Interface` exposes HTTP controllers and console commands.
+- `Kernel` manages HTTP infrastructure and middleware.
+- `Support` provides shared utilities independent of application layers.
 
-Le directory sono predisposte nello scaffold; gran parte delle implementazioni deve ancora essere aggiunta. Anche `prisma/` è attualmente vuota.
+Most of these layers still await implementation. Empty scaffold directories, including `prisma/`, may be absent from a fresh Git checkout.
 
-## Avvio locale con Docker
+## Local setup with Docker
 
-Servono Docker con supporto a Docker Compose v2 e GNU Make. Eseguire i comandi dalla radice del progetto; Node.js sull'host è facoltativo se si lavora nei container.
+Docker with Docker Compose v2 support and GNU Make are required. Run commands from the project root. Node.js on the host is optional when working in containers.
 
-Per personalizzare le porte, copiare `.env.example` in `.env` prima dell'avvio. Il file `.env` è facoltativo e non deve essere versionato.
+To customize ports, copy `.env.example` to `.env` before starting. The `.env` file is optional and must not be committed.
 
 ```sh
 cp .env.example .env
@@ -84,61 +84,59 @@ curl --fail http://127.0.0.1:3000/health
 make check
 ```
 
-`make npm c="ci"` installa le dipendenze dal lockfile nel volume Linux `node_modules`. `make infra` avvia PostgreSQL e Mailpit; `make up` avvia anche l'applicazione con riavvio automatico tramite `tsx watch` e debugger. Può avviare direttamente tutti e tre i servizi anche senza un precedente `make infra`.
+`make npm c="ci"` installs dependencies from the lockfile into the Linux `node_modules` volume. `make infra` starts PostgreSQL and Mailpit; `make up` also starts the application with automatic restarts through `tsx watch` and the debugger enabled. It can start all three services directly without a preceding `make infra`.
 
-La risposta attesa dell'health check è:
+The expected health check response is:
 
 ```json
 {"status":"ok"}
 ```
 
-| Servizio | Accesso predefinito dall'host |
+| Service | Default host access |
 |---|---|
 | API | `http://127.0.0.1:3000` |
-| Debugger Node.js | `127.0.0.1:9229` |
+| Node.js debugger | `127.0.0.1:9229` |
 | PostgreSQL | `127.0.0.1:5432` |
-| Mailpit, interfaccia web | `http://127.0.0.1:8025` |
-| Mailpit, SMTP | `127.0.0.1:1025` |
+| Mailpit web interface | `http://127.0.0.1:8025` |
+| Mailpit SMTP | `127.0.0.1:1025` |
 
-Le porte pubblicate sono configurabili tramite `APP_PORT`, `DEBUG_PORT`, `POSTGRES_PORT`, `MAILPIT_UI_PORT` e `MAILPIT_SMTP_PORT` in `.env`. Se cambia `APP_PORT`, adeguare l'URL dell'health check.
+Published ports can be configured through `APP_PORT`, `DEBUG_PORT`, `POSTGRES_PORT`, `MAILPIT_UI_PORT`, and `MAILPIT_SMTP_PORT` in `.env`. If `APP_PORT` changes, update the health check URL accordingly.
 
-PostgreSQL usa le credenziali locali `ledgerly` / `ledgerly`. Il database di sviluppo è `ledgerly`; `ledgerly_test` viene creato dallo script di inizializzazione per i futuri test su database reale. Lo script viene eseguito soltanto alla prima inizializzazione del volume `pgdata`.
+PostgreSQL uses the local credentials `ledgerly` / `ledgerly`. The development database is `ledgerly`; the initialization script creates `ledgerly_test` for future tests against a real database. This script runs only when the `pgdata` volume is first initialized.
 
-Nel container, le connessioni usano i nomi dei servizi `postgres` e `mailpit`. Docker Compose imposta già `DATABASE_URL`, `DATABASE_URL_TEST`, `SMTP_HOST` e `SMTP_PORT`.
+Inside containers, connections use the service names `postgres` and `mailpit`. Docker Compose already sets `DATABASE_URL`, `DATABASE_URL_TEST`, `SMTP_HOST`, and `SMTP_PORT`.
 
-## Comandi di sviluppo
+## Development commands
 
-| Comando | Scopo |
+| Command | Purpose |
 |---|---|
-| `make help` | Elenca i comandi disponibili |
-| `make logs` | Segue i log dei servizi |
-| `make shell` | Apre una shell nel container dell'applicazione |
-| `make test` | Esegue i test Vitest |
-| `make lint` | Esegue ESLint |
-| `make typecheck` | Verifica i tipi TypeScript |
-| `make check` | Esegue typecheck, lint, confini delle dipendenze e test con coverage |
-| `make psql` / `make psql-test` | Apre la console del database di sviluppo o di test |
-| `make npm c="run build"` | Compila TypeScript in `dist/` |
-| `make prod-image` | Costruisce l'immagine di produzione `ledgerly:local` |
-| `make down` | Ferma i servizi conservando i volumi |
-| `make reset` | Ferma i servizi e cancella i volumi, inclusi database e dipendenze |
+| `make help` | List available commands |
+| `make logs` | Follow service logs |
+| `make shell` | Open a shell in the application container |
+| `make test` | Run Vitest tests |
+| `make lint` | Run ESLint |
+| `make typecheck` | Check TypeScript types |
+| `make check` | Run type checks, lint, dependency boundary checks, and tests with coverage |
+| `make psql` / `make psql-test` | Open the development or test database console |
+| `make npm c="run build"` | Compile TypeScript into `dist/` |
+| `make prod-image` | Build the production image as `ledgerly:local` |
+| `make down` | Stop services while preserving volumes |
+| `make reset` | Stop services and delete volumes, including databases and dependencies |
 
-In alternativa, con la versione Node.js indicata in `.nvmrc`, è possibile eseguire sull'host `npm ci`, `npm run dev` e `npm run check`. L'avvio diretto con Node.js richiede che le variabili d'ambiente siano già impostate nella shell: lo scaffold non carica automaticamente `.env`. Per le future connessioni al database dall'host, usare `localhost` e la porta pubblicata.
+Alternatively, with the Node.js version specified in `.nvmrc`, run `npm ci`, `npm run dev`, and `npm run check` on the host. Running Node.js directly requires environment variables to be set in the shell: the scaffold does not automatically load `.env`. For future database connections from the host, use `localhost` and the published port.
 
-La configurazione HTTP attuale accetta `NODE_ENV` (`development`, `test`, `production`), `HOST` (default `0.0.0.0`), `PORT` (default `3000`) e `SHUTDOWN_TIMEOUT_MS` (default `10000`).
+The current HTTP configuration accepts `NODE_ENV` (`development`, `test`, `production`), `HOST` (default `0.0.0.0`), `PORT` (default `3000`), and `SHUTDOWN_TIMEOUT_MS` (default `10000`).
 
-## Verifiche e sviluppo previsto
+## Validation and roadmap
 
-La suite attuale copre la configurazione e il comportamento HTTP di `/health` e delle route sconosciute. La CI esegue installazione dal lockfile, typecheck, lint, controllo delle dipendenze, test con coverage, build TypeScript, audit npm e build dell'immagine di produzione.
+The current suite covers configuration and HTTP behavior for `/health` and unknown routes. CI runs installation from the lockfile, type checks, lint, dependency checks, tests with coverage, the TypeScript build, npm audit, and the production image build.
 
-La strategia prevista aggiunge test su PostgreSQL reale per transazioni, migrazioni, lock e vincoli; test API per permessi, isolamento tenant e idempotenza; test concorrenti per numerazione e incassi; test di contratto per SDI e conservazione. L'obiettivo di coverage è almeno l'85% su `Domain/` e `Application/` una volta implementati.
+The planned strategy adds tests against real PostgreSQL for transactions, migrations, locks, and constraints; API tests for permissions, tenant isolation, and idempotency; concurrency tests for numbering and payments; and contract tests for SDI and preservation. The coverage target is at least 85% for `Domain/` and `Application/` once implemented.
 
-La roadmap procede da M0 (fondamenta) a M1 (HTTP), M2 (persistenza), M3 (identità e tenant), M4 (anagrafiche), M5 (contabilità), M6 (fatturazione), M7 (incassi), M8 (asincrono), M9 (SDI e conservazione), M10 (ricorrenze e report) e M11 (sicurezza e audit). La preparazione al rilascio M12 sarà analizzata separatamente.
+The roadmap progresses from M0 (foundations) through M1 (HTTP), M2 (persistence), M3 (identity and tenants), M4 (contacts), M5 (accounting), M6 (invoicing), M7 (payments), M8 (background processing), M9 (SDI and preservation), M10 (recurring invoices and reports), and M11 (security and audit). Release preparation, M12, will be analyzed separately.
 
-Il flusso previsto usa un branch e una PR per task, Conventional Commits, controlli CI e squash merge. La configurazione delle protezioni GitHub fa parte delle attività iniziali ancora da completare. Le nuove dipendenze devono essere concordate prima dell'introduzione.
+The planned workflow uses one branch and pull request per task, Conventional Commits, CI checks, and squash merges. GitHub branch protection is an initial task still to be completed. New dependencies must be agreed upon before introduction. All repository content, code comments, commit messages, and pull request text must be written in English.
 
-## Documentazione
+## Project specifications
 
-- [Specifiche Node.js/TypeScript](docs/02-Progetto-A-Quadrevo-Nodejs-TypeScript.md): dominio, architettura, persistenza, API, ciclo SDI e criteri di rilascio.
-- [Task list M0–M11](docs/03-Task-List-M0-M11.md): dipendenze, convenzioni e criteri di completamento dei task.
-- [Documento PHP originale](docs/02-Progetto-A-Quadrevo-PHP-Vanilla.md): riferimento storico; la variante corrente segue le specifiche Node.js/TypeScript.
+Detailed planning documents are maintained locally under `docs/`, which is currently excluded from version control. They are not included in a GitHub checkout. The Node.js/TypeScript specification is the reference for this implementation; the original PHP proposal is retained locally as historical context.

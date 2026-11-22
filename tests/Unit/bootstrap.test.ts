@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { InvalidConfigError, loadConfig } from '../../src/bootstrap.js';
 
 describe('loadConfig', () => {
-  it('applica i default a un ambiente vuoto', () => {
+  it('applies defaults to an empty environment', () => {
     expect(loadConfig({})).toEqual({
       env: 'development',
       http: { host: '0.0.0.0', port: 3000 },
@@ -10,7 +10,7 @@ describe('loadConfig', () => {
     });
   });
 
-  it('converte i valori stringa delle variabili d’ambiente', () => {
+  it('coerces environment variable strings', () => {
     const config = loadConfig({ NODE_ENV: 'production', PORT: '8080', SHUTDOWN_TIMEOUT_MS: '2500' });
     expect(config.env).toBe('production');
     expect(config.http.port).toBe(8080);
@@ -22,15 +22,15 @@ describe('loadConfig', () => {
     { PORT: '70000' },
     { NODE_ENV: 'staging' },
     { SHUTDOWN_TIMEOUT_MS: '0' },
-  ])('rifiuta configurazioni non valide: %o', (env) => {
+  ])('rejects invalid configurations: %o', (env) => {
     expect(() => loadConfig(env)).toThrow(InvalidConfigError);
   });
 
-  it('rifiuta input che non sono oggetti', () => {
+  it('rejects non-object inputs', () => {
     expect(() => loadConfig(undefined)).toThrow(InvalidConfigError);
   });
 
-  it('restituisce una configurazione immutabile', () => {
+  it('returns an immutable configuration', () => {
     const config = loadConfig({});
     expect(Object.isFrozen(config)).toBe(true);
     expect(Object.isFrozen(config.http)).toBe(true);

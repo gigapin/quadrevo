@@ -24,13 +24,13 @@ afterAll(async () => {
 });
 
 describe('GET /health', () => {
-  it('risponde 200 con stato ok', async () => {
+  it('returns 200 with status ok', async () => {
     const res = await fetch(`${baseUrl}/health`);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ status: 'ok' });
   });
 
-  it('risponde 404 in formato Problem Details per route sconosciute', async () => {
+  it('returns 404 in Problem Details format for unknown routes', async () => {
     const res = await fetch(`${baseUrl}/nope`);
     expect(res.status).toBe(404);
     expect(res.headers.get('content-type')).toBe('application/problem+json');

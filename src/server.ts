@@ -18,10 +18,10 @@ let shuttingDown = false;
 function shutdown(signal: NodeJS.Signals): void {
   if (shuttingDown) return;
   shuttingDown = true;
-  console.log(`${signal} ricevuto, chiusura in corso`);
+  console.log(`${signal} received, shutting down`);
 
   const deadline = setTimeout(() => {
-    console.error(`Chiusura non completata entro ${String(config.shutdownTimeoutMs)} ms, uscita forzata`);
+    console.error(`Shutdown did not complete within ${String(config.shutdownTimeoutMs)} ms, forcing exit`);
     process.exit(1);
   }, config.shutdownTimeoutMs);
   deadline.unref();
@@ -29,7 +29,7 @@ function shutdown(signal: NodeJS.Signals): void {
   // Stop accepting connections and wait for in-flight requests.
   server.close((error) => {
     if (error) {
-      console.error('Errore in chiusura del server HTTP', error);
+      console.error('Error shutting down the HTTP server', error);
       process.exit(1);
     }
     process.exit(0);

@@ -2,7 +2,7 @@
   "name": "ledgerly",
   "version": "1.0.0",
   "private": true,
-  "description": "Backend di fatturazione elettronica e contabilità in partita doppia, multi-tenant, via API REST",
+  "description": "Multi-tenant backend for electronic invoicing and double-entry accounting through a REST API",
   "license": "ISC",
   "author": "Giuseppe Galari",
   "type": "module",
