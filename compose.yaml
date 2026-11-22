@@ -1,4 +1,4 @@
-name: ledgerly-ts
+name: quadrevo-ts
 
 services:
   app:
@@ -14,8 +14,8 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3000
-      DATABASE_URL: postgresql://ledgerly:ledgerly@postgres:5432/ledgerly?schema=public
-      DATABASE_URL_TEST: postgresql://ledgerly:ledgerly@postgres:5432/ledgerly_test?schema=public
+      DATABASE_URL: postgresql://quadrevo:quadrevo@postgres:5432/quadrevo?schema=public
+      DATABASE_URL_TEST: postgresql://quadrevo:quadrevo@postgres:5432/quadrevo_test?schema=public
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
     ports:
@@ -34,9 +34,9 @@ services:
   postgres:
     image: postgres:18.7-trixie
     environment:
-      POSTGRES_USER: ledgerly
-      POSTGRES_PASSWORD: ledgerly
-      POSTGRES_DB: ledgerly
+      POSTGRES_USER: quadrevo
+      POSTGRES_PASSWORD: quadrevo
+      POSTGRES_DB: quadrevo
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
@@ -44,7 +44,7 @@ services:
       - pgdata:/var/lib/postgresql
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ledgerly -d ledgerly"]
+      test: ["CMD-SHELL", "pg_isready -U quadrevo -d quadrevo"]
       interval: 5s
       timeout: 3s
       retries: 10

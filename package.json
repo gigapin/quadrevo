@@ -1,5 +1,5 @@
 {
-  "name": "ledgerly",
+  "name": "quadrevo",
   "version": "1.0.0",
   "private": true,
   "description": "Multi-tenant backend for electronic invoicing and double-entry accounting through a REST API",
