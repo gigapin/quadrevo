@@ -1,6 +1,6 @@
-import express, { type Express,  type Request, type Response, type NextFunction } from 'express';
+import express, { type Express,  type Request, type Response } from 'express';
 import router from './Router.ts';
-import errorHandler, { notFound, notAuthorized } from './Middleware/ErrorHandler.ts';
+import errorHandler from './Middleware/ErrorHandler.ts';
 
 const app: Express = express();
 
@@ -15,8 +15,6 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
-/* app.use(notAuthorized);
-app.use(notFound); */
 app.use(errorHandler);
 
 app.use((req: Request, res: Response) => {
