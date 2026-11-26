@@ -1,14 +1,14 @@
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createHttpServer } from '../../src/Kernel/HttpServer.js';
+import app from '../../src/Kernel/ExpressApp.ts';
 
 // Exercise a real server on an ephemeral port using fetch.
 let server: Server;
 let baseUrl: string;
 
 beforeAll(async () => {
-  server = createHttpServer();
+  server = app.listen();
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const { port } = server.address() as AddressInfo;
   baseUrl = `http://127.0.0.1:${String(port)}`;
