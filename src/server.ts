@@ -1,41 +1,10 @@
-import type { AddressInfo } from 'node:net';
-import { loadConfig } from './bootstrap.js';
-import { createHttpServer } from './Kernel/HttpServer.js';
+import 'dotenv/config';
+import app from './Kernel/ExpressApp.ts';
 
-// Log to stdout/stderr until structured logging is introduced.
-/* eslint-disable no-console */
+const port = Number(process.env.PORT ?? 3000);
 
-const config = loadConfig(process.env);
-const server = createHttpServer();
+const localServer = app.listen(port, "0.0.0.0");
 
-server.listen(config.http.port, config.http.host, () => {
-  const { address, port } = server.address() as AddressInfo;
-  console.log(`quadrevo listening on http://${address}:${String(port)} (${config.env})`);
-});
+export default localServer
 
-let shuttingDown = false;
 
-function shutdown(signal: NodeJS.Signals): void {
-  if (shuttingDown) return;
-  shuttingDown = true;
-  console.log(`${signal} received, shutting down`);
-
-  const deadline = setTimeout(() => {
-    console.error(`Shutdown did not complete within ${String(config.shutdownTimeoutMs)} ms, forcing exit`);
-    process.exit(1);
-  }, config.shutdownTimeoutMs);
-  deadline.unref();
-
-  // Stop accepting connections and wait for in-flight requests.
-  server.close((error) => {
-    if (error) {
-      console.error('Error shutting down the HTTP server', error);
-      process.exit(1);
-    }
-    process.exit(0);
-  });
-  server.closeIdleConnections();
-}
-
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);

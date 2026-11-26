@@ -32,7 +32,7 @@ For host development, use `npm ci`, `npm run dev`, and `npm run check`.
 
 ## Coding Style & Naming Conventions
 
-Write repository content, comments, messages, commits, and PRs in English. Follow existing two-space indentation, single quotes, and semicolons. Use strict TypeScript, ESM imports with `.js` relative extensions, and explicit type imports. Match PascalCase class/module names and camelCase functions/variables. Validate external input with Zod. ESLint enforces typed rules; agree on new dependencies before adding them.
+Write repository content, comments, messages, commits, and PRs in English. Follow existing two-space indentation, single quotes, and semicolons. Use strict TypeScript, explicit ESM relative import extensions (`.ts` or `.js`), and explicit type imports. The compiler rewrites TypeScript import extensions to JavaScript extensions during builds. Match PascalCase class/module names and camelCase functions/variables. Validate external input with Zod. ESLint enforces typed rules; agree on new dependencies before adding them.
 
 ## Testing Guidelines
 
